@@ -20,7 +20,7 @@ module talks to the Podman (w/libpod beneath) via varlink API.
 
 ## Requirements
 
-- Python 3 (no Python bindings for Valink for Py < 3))
+- Python 3.5 (no [Python-Varlink](https://github.com/varlink/python) Bindings for Py < 3, so no support for Py <3 is planned)
 - Podman 0.9.1 (not tested w/older)
 - Varlink == 12 (not tested w/older)
 
@@ -35,12 +35,14 @@ module talks to the Podman (w/libpod beneath) via varlink API.
   no tag is included, 'latest' will be used.
 - **pull**: If true, always pull the latest version of an image. Otherwise, 
   will only pull an image when missing.
-- **state** [absent, present, stopped, started]: 
+- **state** [absent, present, stopped, started]:
+- **force_kill**:
+- **keep_volumes**: 
   
 ## Examples
 
 ```bash
-- name: Create nginx container
+- name: Create Nginx container
   podman_container:
     name: nginx
     image: docker.io/library/nginx
@@ -60,3 +62,20 @@ module talks to the Podman (w/libpod beneath) via varlink API.
     name: nginx
     state: absent
 ```
+
+## Development
+
+clone ansible repo directly to the root directory of this repo (its contents 
+will be excluded as per .gitignore settings). Then create symlink:
+
+```
+mkdir -p ansible/lib/ansible/modules/cloud/oci/
+ln -s module/podman_container.py ansible/lib/ansible/modules/cloud/oci/podman_container.py
+ln -s module/podman_common.py ansible/lib/ansible/module_utils/podman_common.py
+```
+
+Now simply follow the development practices described in [developing modules](https://docs.ansible.com/ansible/2.5/dev_guide/developing_modules_general.html)
+
+Thanks to above you'll have your module properly developed using all the 
+Ansible - provided tools and keep it directly in this repository.
+ 
