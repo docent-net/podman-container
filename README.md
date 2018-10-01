@@ -65,17 +65,62 @@ module talks to the Podman (w/libpod beneath) via varlink API.
 
 ## Development
 
-clone ansible repo directly to the root directory of this repo (its contents 
-will be excluded as per .gitignore settings). Then create symlink:
+Clone ansible repo directly to the root directory of this repo (its contents 
+will be excluded as per .gitignore settings). Then create required directories 
+and symlinks:
 
 ```
 mkdir -p ansible/lib/ansible/modules/cloud/oci/
+mkdir -p ansible/test/units/modules/cloud/podma
 ln -s ln -s ../../../../module/podman ansible/lib/ansible/modules/cloud/oci/podman_container.py
 ln -s ln -s ../../../../module/podman ansible/lib/ansible/module_utils/podman_common.py
+ln -s ../../../../../../module/tests/podman/test_podman_container.py ansible/test/units/modules/cloud/podman/test_podman_container.py
 ```
 
 Now simply follow the development practices described in [developing modules](https://docs.ansible.com/ansible/2.5/dev_guide/developing_modules_general.html)
 
-Thanks to above you'll have your module properly developed using all the 
-Ansible - provided tools and keep it directly in this repository.
- 
+Generally you should first initialize virtual environment:
+
+```bash
+cd podman_container/ansible
+mkvirtualenv --python=/usr/bin/python3 ansible-modules-podman-container
+pip install -r requirements.txt
+```
+
+And now everytime you start your work session simply:
+
+```
+. hacking/env-setup
+cd ../module
+python podman_container.py ../development_helpers/args.json
+```
+
+Of course this `. hacking/env-setup` is required only once on the very 
+beginning of your work session.
+
+### Testing
+
+This repo also provides unit tests. See **module/tests** directory. Originally
+Ansible keeps unit tests for modules in **ansible/test/units/modules/**
+directory and that's where you'll find Podman's tests.
+
+In order to run those tests also follow standard Ansible module development
+practices described in [developing modules](https://docs.ansible.com/ansible/2.5/dev_guide/developing_modules_general.html).
+
+In a nutshell - first initialize your tests virtual environment:
+
+```
+cd podman_container/ansible
+mkvirtualenv --python=/usr/bin/python3 ansible-modules-podman-container-tests
+pip3 install -r ./test/runner/requirements/units.txt
+```
+
+And every time you wanna work on tests simply run:
+```
+. hacking/env-setup
+ansible-test units --python 3.5
+
+``` 
+
+Of course this `. hacking/env-setup` is required only once on the very 
+beginning of your work session.
