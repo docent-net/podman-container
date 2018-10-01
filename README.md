@@ -70,8 +70,8 @@ will be excluded as per .gitignore settings). Then create symlink:
 
 ```
 mkdir -p ansible/lib/ansible/modules/cloud/oci/
-ln -s module/podman_container.py ansible/lib/ansible/modules/cloud/oci/podman_container.py
-ln -s module/podman_common.py ansible/lib/ansible/module_utils/podman_common.py
+ln -s ln -s ../../../../module/podman ansible/lib/ansible/modules/cloud/oci/podman_container.py
+ln -s ln -s ../../../../module/podman ansible/lib/ansible/module_utils/podman_common.py
 ```
 
 Now simply follow the development practices described in [developing modules](https://docs.ansible.com/ansible/2.5/dev_guide/developing_modules_general.html)

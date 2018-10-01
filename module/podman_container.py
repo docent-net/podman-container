@@ -139,7 +139,58 @@ podman_container:
     }'
 '''
 
-from ansible.module_utils.podman_common import sanitize_result, AnsiblePodmanClient
+from ansible.module_utils.podman_common import sanitize_result, \
+    AnsiblePodmanClient, PodmanBaseClass
+
+class TaskParameters(PodmanBaseClass):
+    '''
+    Access and parse module parameters
+    '''
+
+    def __init__(self, client):
+        super(TaskParameters, self).__init__()
+        self.client = client
+
+        self.force_kill = None
+        self.image = None
+        self.name = None
+        self.state = None
+
+        for key, value in client.module.params.items():
+            setattr(self, key, value)
+
+    def fail(self, msg):
+        self.client.module.fail_json(msg=msg)
+
+    @property
+    def update_parameters(self):
+        '''
+        Returns parameters used to update a container
+        Not used for now
+        '''
+
+        update_parameters = dict()
+        result = dict()
+        for key, value in update_parameters.items():
+            if getattr(self, value, None) is not None:
+                result[key] = getattr(self, value)
+        return result
+
+    @property
+    def create_parameters(self):
+        '''
+        Returns parameters used to create a container
+        '''
+        create_params = dict(
+            name='name',
+        )
+
+        result = dict()
+
+        for key, value in create_params.items():
+            if getattr(self, value, None) is not None:
+                result[key] = getattr(self, value)
+        return result
 
 
 class AnsiblePodmanClientContainer(AnsiblePodmanClient):

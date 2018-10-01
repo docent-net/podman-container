@@ -7,11 +7,6 @@ HAS_VARLINK = False
 HAS_VARLINK_ERROR = None
 DEFAULT_VARLINK_SOCKET = 'unix:/run/podman/io.podman'
 
-PODMAN_COMMON_ARGS = dict(
-    docker_host=dict(type='str', aliases=['varlink_socket'], default=DEFAULT_VARLINK_SOCKET, fallback=(env_fallback, ['VARLINK_SOCKET'])),
-    debug=dict(type='bool', default=False)
-)
-
 # TODO: handling Varlink, Podman versions
 try:
     import varlink
@@ -92,14 +87,8 @@ class AnsiblePodmanClient(PodmanClient):
     def __init__(self, argument_spec=None, supports_check_mode=False,
                  required_if=None):
 
-        merged_arg_spec = dict()
-        merged_arg_spec.update(PODMAN_COMMON_ARGS)
-        if argument_spec:
-            merged_arg_spec.update(argument_spec)
-            self.arg_spec = merged_arg_spec
-
         self.module = AnsibleModule(
-            argument_spec=merged_arg_spec,
+            argument_spec=argument_spec,
             supports_check_mode=supports_check_mode,
             required_if=required_if)
 
@@ -109,11 +98,12 @@ class AnsiblePodmanClient(PodmanClient):
         # TODO: when version handling is done
         # if LooseVersion(docker_version) < LooseVersion(MIN_DOCKER_VERSION):
         #     self.fail("Error: docker / docker-py version is %s. Minimum version required is %s." % (docker_version,
-                                                                                                    MIN_DOCKER_VERSION))
-
+        #                                                                                             MIN_DOCKER_VERSION))
         self.debug = self.module.params.get('debug')
         self.check_mode = self.module.check_mode
-        self._connect_params = self._get_connect_params()
+        self._connect_params = {
+            'PODMAN_VARLINK_SOCKET': DEFAULT_VARLINK_SOCKET
+        }
 
         try:
             super(AnsiblePodmanClient, self).__init__(**self._connect_params)
@@ -157,17 +147,6 @@ class AnsiblePodmanClient(PodmanClient):
 
         # take the default
         return default_value
-
-    def _get_connect_params(self):
-        auth = self.auth_params
-
-        self.log("connection params:")
-        for key in auth:
-            self.log("  %s: %s" % (key, auth[key]))
-
-        return dict(base_url=auth['docker_host'],
-                    version=auth['api_version'],
-                    timeout=auth['timeout'])
 
     def get_container(self, name=None):
         pass
