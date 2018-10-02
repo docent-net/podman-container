@@ -151,6 +151,8 @@ class TaskParameters(PodmanBaseClass):
         super(TaskParameters, self).__init__()
         self.client = client
 
+        self._set_default_parameters()
+
         self.force_kill = None
         self.image = None
         self.name = None
@@ -162,35 +164,14 @@ class TaskParameters(PodmanBaseClass):
     def fail(self, msg):
         self.client.module.fail_json(msg=msg)
 
-    @property
-    def update_parameters(self):
-        '''
-        Returns parameters used to update a container
-        Not used for now
-        '''
-
-        update_parameters = dict()
-        result = dict()
-        for key, value in update_parameters.items():
-            if getattr(self, value, None) is not None:
-                result[key] = getattr(self, value)
-        return result
-
-    @property
-    def create_parameters(self):
-        '''
-        Returns parameters used to create a container
-        '''
-        create_params = dict(
-            name='name',
+    def _set_default_parameters(self):
+        create_params = (
+            'name',
+            'image'
         )
 
-        result = dict()
-
-        for key, value in create_params.items():
-            if getattr(self, value, None) is not None:
-                result[key] = getattr(self, value)
-        return result
+        for _param in create_params:
+            setattr(self, _param, False)
 
 
 class AnsiblePodmanClientContainer(AnsiblePodmanClient):
@@ -199,6 +180,33 @@ class AnsiblePodmanClientContainer(AnsiblePodmanClient):
         super(AnsiblePodmanClientContainer, self).__init__(**kwargs)
 
         pass
+
+class Container(PodmanBaseClass):
+
+    def __init__(self, container, parameters):
+        super(Container, self).__init__()
+        self.Id = None
+        self.container = container
+        # if container:
+        #     self.Id = container['Id']
+        #     self.Image = container['Image']
+
+        self.log(self.container, pretty_print=True)
+        self.parameters = parameters
+
+    def fail(self, msg):
+        self.parameters.client.module.fail_json(msg=msg)
+
+    @property
+    def exists(self):
+        return True if self.container else False
+
+    @property
+    def running(self):
+        if self.container and self.container.get('State'):
+            if self.container['State'].get('Running'):
+                return True
+        return False
 
 class ContainerManager(PodmanBaseClass):
     '''
@@ -221,18 +229,19 @@ class ContainerManager(PodmanBaseClass):
             self.present(state)
         elif state == 'absent':
             self.absent()
-
-        if not self.check_mode and not self.parameters.debug:
-            self.results.pop('actions')
-
-        if self.client.module._diff or self.parameters.debug:
-            self.results['diff'] = self.diff
-
-        if self.facts:
-            self.results['ansible_facts'] = {'podman_container': self.facts}
+        #
+        # if not self.check_mode and not self.parameters.debug:
+        #     self.results.pop('actions')
+        #
+        # if self.client.module._diff or self.parameters.debug:
+        #     self.results['diff'] = self.diff
+        #
+        # if self.facts:
+        #     self.results['ansible_facts'] = {'podman_container': self.facts}
 
     def present(self, state):
-        pass
+        container = self._get_container(self.parameters.name)
+
 
     def absent(self):
         pass
@@ -257,6 +266,12 @@ class ContainerManager(PodmanBaseClass):
 
     def container_stop(self, container_id):
         pass
+
+    def _get_container(self, container):
+        '''
+        Expects container ID or Name. Returns a container object
+        '''
+        return Container(self.client.get_container(container), self.parameters)
 
 
 def main():

@@ -71,10 +71,10 @@ and symlinks:
 
 ```
 mkdir -p ansible/lib/ansible/modules/cloud/oci/
-mkdir -p ansible/test/units/modules/cloud/podma
+mkdir -p ansible/test/units/modules/cloud/oci/
 ln -s ln -s ../../../../module/podman ansible/lib/ansible/modules/cloud/oci/podman_container.py
 ln -s ln -s ../../../../module/podman ansible/lib/ansible/module_utils/podman_common.py
-ln -s ../../../../../../module/tests/podman/test_podman_container.py ansible/test/units/modules/cloud/podman/test_podman_container.py
+ln -s ../../../../../../module/tests/podman/test_podman_container.py ansible/test/units/modules/cloud/oci/test_podman_container.py
 ```
 
 Now simply follow the development practices described in [developing modules](https://docs.ansible.com/ansible/2.5/dev_guide/developing_modules_general.html)
