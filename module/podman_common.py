@@ -1,4 +1,5 @@
 import os
+import json
 
 from ansible.module_utils.basic import AnsibleModule, env_fallback
 from ansible.module_utils.parsing.convert_bool import BOOLEANS_TRUE, BOOLEANS_FALSE
@@ -27,9 +28,25 @@ try:
 #         from docker import Client
 #         from docker.utils.types import Ulimit, LogConfig
 #
-except ImportError as exc:
-    HAS_VARLINK_ERROR = str(exc)
+except ImportError as e:
+    HAS_VARLINK_ERROR = str(e)
     HAS_VARLINK = False
+
+
+class PodmanBaseClass(object):
+
+    def __init__(self):
+        self.debug = True
+
+    def log(self, msg, pretty_print=False):
+        # pass
+        if self.debug:
+            log_file = open('podman.log', 'a')
+            if pretty_print:
+                log_file.write(json.dumps(msg, sort_keys=True, indent=4, separators=(',', ': ')))
+                log_file.write(u'\n')
+            else:
+                log_file.write(msg + u'\n')
 
 
 if not HAS_VARLINK:
@@ -42,9 +59,23 @@ if not HAS_VARLINK:
     class APIError(Exception):
         pass
 else:
-    class PodmanClient(object):
+    class PodmanClient(PodmanBaseClass):
+        client = False
+
         def __init__(self, **kwargs):
+            if not self.client:
+                self.client = varlink.Client.new_with_address(DEFAULT_VARLINK_SOCKET)
+                self.log(self.client)
+
+            self.check_varlink_connection()
+
+        def check_varlink_connection(self):
             pass
+
+
+        def containers(self, all=False):
+            return {}
+
 
     class APIError(Exception):
         pass
@@ -66,22 +97,6 @@ def sanitize_result(data):
         return data
 
 
-class PodmanBaseClass(object):
-
-    def __init__(self):
-        self.debug = False
-
-    def log(self, msg, pretty_print=False):
-        pass
-        # if self.debug:
-        #     log_file = open('podman.log', 'a')
-        #     if pretty_print:
-        #         log_file.write(json.dumps(msg, sort_keys=True, indent=4, separators=(',', ': ')))
-        #         log_file.write(u'\n')
-        #     else:
-        #         log_file.write(msg + u'\n')
-
-
 class AnsiblePodmanClient(PodmanClient):
 
     def __init__(self, argument_spec=None, supports_check_mode=False,
@@ -99,7 +114,7 @@ class AnsiblePodmanClient(PodmanClient):
         # if LooseVersion(docker_version) < LooseVersion(MIN_DOCKER_VERSION):
         #     self.fail("Error: docker / docker-py version is %s. Minimum version required is %s." % (docker_version,
         #                                                                                             MIN_DOCKER_VERSION))
-        self.debug = self.module.params.get('debug')
+        self.debug = True
         self.check_mode = self.module.check_mode
         self._connect_params = {
             'PODMAN_VARLINK_SOCKET': DEFAULT_VARLINK_SOCKET
@@ -113,14 +128,14 @@ class AnsiblePodmanClient(PodmanClient):
             self.fail("Error connecting: %s" % exc)
 
     def log(self, msg, pretty_print=False):
-        pass
-        # if self.debug:
-        #     log_file = open('docker.log', 'a')
-        #     if pretty_print:
-        #         log_file.write(json.dumps(msg, sort_keys=True, indent=4, separators=(',', ': ')))
-        #         log_file.write(u'\n')
-        #     else:
-        #         log_file.write(msg + u'\n')
+        # pass
+        if self.debug:
+            log_file = open('podman.log', 'a')
+            if pretty_print:
+                log_file.write(json.dumps(msg, sort_keys=True, indent=4, separators=(',', ': ')))
+                log_file.write(u'\n')
+            else:
+                log_file.write(msg + u'\n')
 
     def fail(self, msg):
         self.module.fail_json(msg=msg)
@@ -152,7 +167,7 @@ class AnsiblePodmanClient(PodmanClient):
         '''
         Lookup a container and return the inspection results.
         '''
-        return 123
+        self.log('getting {}'.format(name))
         if name is None:
             return None
 
@@ -173,18 +188,16 @@ class AnsiblePodmanClient(PodmanClient):
                 if container['Id'] == name:
                     result = container
                     break
-        except SSLError as exc:
-            self._handle_ssl_error(exc)
-        except Exception as exc:
-            self.fail("Error retrieving container list: %s" % exc)
+        except Exception as e:
+            self.fail("Error retrieving container list: {}".format(e))
 
         if result is not None:
             try:
                 self.log("Inspecting container Id %s" % result['Id'])
                 result = self.inspect_container(container=result['Id'])
                 self.log("Completed container inspection")
-            except Exception as exc:
-                self.fail("Error inspecting container: %s" % exc)
+            except Exception as e:
+                self.fail("Error inspecting container: {}" .format(e))
 
         return result
 
